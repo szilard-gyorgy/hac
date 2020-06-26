@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
-import os, re
+import re
+import os
 
 base_path = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(base_path, 'README.md')).read()
@@ -21,7 +22,7 @@ setup(
     description="",
     long_description=README,
     classifiers=[
-      # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+        # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     ],
     keywords='',
     author='',
@@ -29,7 +30,7 @@ setup(
     url='',
     license='',
     packages=find_packages('src'),
-    package_dir = {'': 'src'},
+    package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
     install_requires=[req for req in requirements if req[:2] != "# "],

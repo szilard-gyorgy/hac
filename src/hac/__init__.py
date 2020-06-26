@@ -1,14 +1,16 @@
 import sys
 import os
+import re
 import click
 import click_config_file
 import logging
 import time
 # from hac.libs.ise_probe.ise_ph import ise_ph
 from hac.components.AtlasPH import AtlasPH
+from hac.components.MQTT import MQTT
+from hac.components.Relay import Relay
 from hac.validators.click.RequiredIf import RequiredIf
 from hac.validators.click.NotRequiredIf import NotRequiredIf
-from hac.components.MQTT import MQTT
 from hac.validators.value.variation import variation
 from gpiozero import CPUTemperature
 
@@ -99,7 +101,7 @@ def calibratePhAtlas(ctx, flag, point, value, address):
               required=False,
               default=False,
               type=str,
-              help="Publish to mqtt topic")              
+              help="Publish to mqtt topic")         
 @click.option('--tolerance',
               required=False,
               default=50,
@@ -186,3 +188,65 @@ def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):
 
         else:
             click.echo("{}:{}".format(sensor[0], value))
+
+
+@main.command(name="relay:on")
+@click.option('--board',
+              required=True,
+              default="1",
+              type=int,
+              help="Board number")
+@click.option('--name',
+              required=True,
+              type=str,
+              help="Relay name")
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def relayON(ctx, board, name):
+    relay = Relay(board, ctx.default_map)
+    relay.switch_on(name)
+
+
+@main.command(name="relay:off")
+@click.option('--board',
+              required=True,
+              default="1",
+              type=int,
+              help="Board number")
+@click.option('--name',
+              required=True,
+              type=str,
+              help="Relay name")       
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def relayOFF(ctx, board, name):
+    relay = Relay(board, ctx.default_map)
+    relay.switch_off(name)
+
+
+@main.command(name="relay:daemon")
+@click.option('--board',
+              required=True,
+              default="1",
+              type=int,
+              help="Board number")
+@click.option('--mqtt_prefix',
+              required=True,
+              type=str,
+              help="mqtt prefix")
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def relayDaemon(ctx, board, mqtt_prefix):
+    config = ctx.default_map
+    relay = Relay(board, ctx.default_map)
+
+    def _on_message(client, userdata, message):
+        match = (re.match(r"^{}(.*)$".format(mqtt_prefix), message.topic))
+        if match and match.group(1) in relay.labels:
+            if int(message.payload):
+                relay.switch_on(match.group(1))
+            else:
+                relay.switch_off(match.group(1))
+
+    mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels])
+    mqtt.loop_forever()
