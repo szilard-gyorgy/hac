@@ -151,8 +151,8 @@ def readTemperatureCpu(ctx, topic):
               cls=NotRequiredIf,
               not_required_if='text-sensor',
               type=(str, str),
-              help="Read sensor and publish to mqtt topic (ex: --sensor ph:atlas home/aquarium/ph \
-                    --sensor temperature:cpu home/aquarium/temperature/cpu")
+              help="Read sensor and publish to mqtt topic (ex: --mqtt-sensor ph:atlas home/aquarium/ph \
+                    --mqtt-sensor temperature:cpu home/aquarium/temperature/cpu")
 @click.option('--text-sensor',
               required=False,
               default=False,
@@ -160,8 +160,8 @@ def readTemperatureCpu(ctx, topic):
               cls=NotRequiredIf,
               not_required_if='mqtt-sensor',
               type=str,
-              help="Read sensor and publish to mqtt topic (ex: --sensor ph:atlas home/aquarium/ph \
-                    --sensor temperature:cpu home/aquarium/temperature/cpu")
+              help="Read sensor and publish to mqtt topic (ex: --text-sensor ph:atlas \
+                    --text-sensor temperature:cpu")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
 def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):

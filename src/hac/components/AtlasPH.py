@@ -1,5 +1,5 @@
 import re
-from sensor.libs.AtlasI2C.AtlasI2C import AtlasI2C
+from hac.libs.AtlasI2C.AtlasI2C import AtlasI2C
 
 
 class AtlasPH(object):

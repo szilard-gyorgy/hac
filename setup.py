@@ -5,7 +5,7 @@ base_path = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(base_path, 'README.md')).read()
 
 # Get the version (borrowed from SQLAlchemy)
-with open(os.path.join(base_path, "src", "sensor", "__version__.py")) as fp:
+with open(os.path.join(base_path, "src", "hac", "__version__.py")) as fp:
     VERSION = (
         re.compile(r""".*__VERSION__ = ["'](.*?)['"]""", re.S).match(fp.read()).group(1)
     )
@@ -35,6 +35,6 @@ setup(
     install_requires=[req for req in requirements if req[:2] != "# "],
     entry_points={
         'console_scripts':
-            ['sensor=hac:main']
+            ['hac=hac:main']
     }
 )
