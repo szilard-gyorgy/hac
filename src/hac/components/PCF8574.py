@@ -14,9 +14,7 @@ class Relay(object):
                 self.labels[value[0]] = match.group(1)
 
     def switch_on(self, relay):
-        print("Switch ON relay:{}".format(self.labels[relay]))
-        # self.board.switch_on(self.label[relay])
+        self.board.switch_on(self.label[relay])
 
     def switch_off(self, relay):
-        print("Switch OFF relay:{}".format(self.labels[relay]))
-        # self.board.switch_on(self.label[relay])
+        self.board.switch_on(self.label[relay])

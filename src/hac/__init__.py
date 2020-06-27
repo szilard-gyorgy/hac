@@ -5,17 +5,15 @@ import click
 import click_config_file
 import logging
 import time
-# from hac.libs.ise_probe.ise_ph import ise_ph
+import json
+from hac.libs.ise_probe.ise_ph import ise_ph
 from hac.components.AtlasPH import AtlasPH
 from hac.components.MQTT import MQTT
-from hac.components.Relay import Relay
 from hac.validators.click.RequiredIf import RequiredIf
 from hac.validators.click.NotRequiredIf import NotRequiredIf
 from hac.validators.value.variation import variation
 from gpiozero import CPUTemperature
 
-
-# ise = ise_ph(0x3f, 1)
 
 logging.basicConfig(
     format='[%(asctime)s] [%(levelname)s]: %(message)s',
@@ -115,14 +113,12 @@ def readPhAtlas(ctx, address, topic, tolerance):
         mqtt = MQTT(ctx.default_map, subscribe=topic)
 
     sensor = AtlasPH(address=address)
-    value = sensor.readPH()
+    value = round(sensor.readPH(),2)
 
     if topic:
-        old_value = float(mqtt.topic_data[topic]) if topic in mqtt.topic_data else float(value)
-        if abs(old_value - value) / value * 100 < tolerance:
-            mqtt.publish(topic, round(value, 2))
-        else:
-            mqtt.publish(topic, '')
+        if topic in mqtt.topic_data:
+            value = variation.filter_invalid(mqtt.topic_data[topic], value, tolerance)
+        mqtt.publish(topic, value)
     else:
         click.echo(value)
 
@@ -136,7 +132,7 @@ def readPhAtlas(ctx, address, topic, tolerance):
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
 def readTemperatureCpu(ctx, topic):
-    value = CPUTemperature().temperature
+    value = round(CPUTemperature().temperature,2)
 
     if topic:
         mqtt = MQTT(ctx.default_map, subscribe=topic)
@@ -177,14 +173,20 @@ def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):
 
     for sensor in sensors:
         if sensor[0] == "ph:atlas":
-            value = AtlasPH(address=config['ph_atlas_address']).readPH()
+            value = round(AtlasPH(address=config['ph_atlas_address']).readPH(),2)
+        elif sensor[0] == "":
+            value = round(ise_ph(config['ph_ufire_address'], 1).measurepH(),2)
         elif sensor[0] == "temperature:cpu":
-            value = CPUTemperature().temperature
+            value = round(CPUTemperature().temperature, 2)
+        elif sensor[0] == "ph:ufire":
+            value = round(ise_ph(ph_ufire_address, 1).measurepH(), 2)
+        elif sensor[0] == 'temperature:ufire':
+            value = ise_ph(ph_ufire_address, 1).measureTemp()
 
         if sensor[1]:
             if sensor[1] in mqtt.topic_data:
-                value = variation.filter_invalid(float(mqtt.topic_data[sensor[1]]), value, config['tolerance'])
-            mqtt.publish(sensor[1], round(value, 2))
+                value = variation.filter_invalid(mqtt.topic_data[sensor[1]], value, config['tolerance'])
+            mqtt.publish(sensor[1], value)
 
         else:
             click.echo("{}:{}".format(sensor[0], value))
@@ -196,13 +198,23 @@ def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):
               default="1",
               type=int,
               help="Board number")
+@click.option('--type',
+              required=True,
+              default="pcf8574",
+              type=click.Choice(['pcf8574', 'DockerPi'], case_sensitive=True),
+              help="Board type")
 @click.option('--name',
               required=True,
               type=str,
               help="Relay name")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
-def relayON(ctx, board, name):
+def relayON(ctx, board, type, name):
+    if type == 'pcf8574':
+        from hac.components.PCF8574 import Relay
+    else:
+        from hac.components.DockerPi import Relay
+
     relay = Relay(board, ctx.default_map)
     relay.switch_on(name)
 
@@ -213,13 +225,23 @@ def relayON(ctx, board, name):
               default="1",
               type=int,
               help="Board number")
+@click.option('--type',
+              required=True,
+              default="pcf8574",
+              type=click.Choice(['pcf8574', 'DockerPi'], case_sensitive=True),
+              help="Board type")
 @click.option('--name',
               required=True,
               type=str,
               help="Relay name")       
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
-def relayOFF(ctx, board, name):
+def relayOFF(ctx, board, type, name):
+    if type == 'pcf8574':
+        from hac.components.PCF8574 import Relay
+    else:
+        from hac.components.DockerPi import Relay
+
     relay = Relay(board, ctx.default_map)
     relay.switch_off(name)
 
@@ -230,13 +252,23 @@ def relayOFF(ctx, board, name):
               default="1",
               type=int,
               help="Board number")
+@click.option('--type',
+              required=True,
+              default="pcf8574",
+              type=click.Choice(['pcf8574', 'DockerPi'], case_sensitive=True),
+              help="Board type")
 @click.option('--mqtt_prefix',
               required=True,
               type=str,
               help="mqtt prefix")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
-def relayDaemon(ctx, board, mqtt_prefix):
+def relayDaemon(ctx, board, type, mqtt_prefix):
+    if type == 'pcf8574':
+        from hac.components.PCF8574 import Relay
+    else:
+        from hac.components.DockerPi import Relay
+
     config = ctx.default_map
     relay = Relay(board, ctx.default_map)
 
@@ -250,3 +282,136 @@ def relayDaemon(ctx, board, mqtt_prefix):
 
     mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels])
     mqtt.loop_forever()
+
+@main.command(name="read:temperature:ufire")
+@click.option('--topic',
+              required=False,
+              default=False,
+              type=str,
+              help="Publish to mqtt topic")         
+@click.option('--tolerance',
+              required=False,
+              default=50,
+              type=int,
+              help="tolerance in %")
+@click.option('--address', 'ph_ufire_address',
+              required=False,
+              default=0x3f,
+              type=int,
+              help="Sensor address")
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def readTemperatureUfire(ctx, topic, tolerance, ph_ufire_address):
+    if topic:
+        mqtt = MQTT(ctx.default_map, subscribe=topic)
+
+    ise = ise_ph(ph_ufire_address, 1)
+    value = round(ise.measureTemp(),3)
+
+    if topic:
+        if topic in mqtt.topic_data:
+            value = variation.filter_invalid(mqtt.topic_data[topic], value, tolerance)
+        mqtt.publish(topic, value)
+    else:
+        click.echo(value)
+
+@main.command(name="read:ph:ufire")
+@click.option('--topic',
+              required=False,
+              default=False,
+              type=str,
+              help="Publish to mqtt topic")         
+@click.option('--samples',
+              required=False,
+              default=3,
+              type=int,
+              help="AVG for Samples")
+@click.option('--tolerance',
+              required=False,
+              default=50,
+              type=int,
+              help="tolerance in %")
+@click.option('--address', 'ph_ufire_address', 
+              required=False,
+              default=0x3f,
+              type=int,
+              help="Sensor address")
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def readPhUfire(ctx, topic, tolerance, samples, ph_ufire_address):
+    if topic:
+        mqtt = MQTT(ctx.default_map, subscribe=topic)
+
+    ise = ise_ph(ph_ufire_address, 1)
+    values = []
+    for x in range(0,samples):
+        values.append(ise.measurepH())
+    value = round(sum(values) / samples, 5)
+
+    if topic:
+        if topic in mqtt.topic_data:
+            value = variation.filter_invalid(mqtt.topic_data[topic], value, tolerance)
+        mqtt.publish(topic, value)
+    else:
+        click.echo(value)
+
+@main.command(name="calibrate:ph:ufire")
+@click.option('--info', 'flag',
+              flag_value='info',
+              is_flag=True,
+              help="Check if device is calibrated")
+@click.option('--clear', 'flag',
+              flag_value='clear',
+              is_flag=True,
+              help="Delete calibration data")
+@click.option('--set', 'flag', flag_value='set',
+              is_flag=True,
+              help="Calibration point (mid, low, high) with associated value ( ex: --point mid 7.00 )")
+@click.option('--point',
+              required=False,
+              default="single",
+              type=click.Choice(['single', 'low', 'high'], case_sensitive=True),
+              help="Calibration point (mid or low or high)")
+@click.option('--value',
+              required=True,
+              multiple=False,
+              default="7.0",
+              cls=RequiredIf,
+              required_if='point',
+              type=float,
+              help="Calibration value")
+@click.option('--address', 'ph_ufire_address',
+              required=False,
+              default=0x3f,
+              type=int,
+              help="PH sensor address")
+@click.pass_context
+@click_config_file.configuration_option(config_file_name=defaultConfigFile)
+def calibratePhAtlas(ctx, flag, point, value, ph_ufire_address):
+    ise = ise_ph(ph_ufire_address, 1)
+
+    if flag == 'info':
+        config = {
+            "offset": str(ise.getCalibrateOffset()),
+            "dual point": str(ise.usingDualPoint()),
+            "low reference": {
+                "reference": str(ise.getCalibrateLowReference()),
+                "reading": str(ise.getCalibrateLowReading())
+            },
+            "high reference": {
+                "reference": str(ise.getCalibrateHighReference()),
+                "reading": str(ise.getCalibrateHighReading())
+            },
+            "temperature composation": str(ise.usingTemperatureCompensation())
+        }
+        click.echo(json.dumps(config, indent=4))
+    elif flag == 'clear':
+        ise.reset()
+    elif flag == 'set':
+        if point == 'single':
+            ise.calibrateSingle(float(value))
+        elif point == 'low':
+            ise.calibrateProbeLow(float(value))
+        elif point == 'high':
+            ise.calibrateProbeHigh(float(value))
+    

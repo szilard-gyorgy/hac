@@ -22,9 +22,13 @@ class MQTT(object):
     def _on_message(self, client, userdata, message):
         self.topic_data[message.topic] = message.payload.decode("utf-8")
 
-    def publish(self, topic, value, retain=True):
-        if value:
-            self._mqttc.publish(topic, value, retain)
+    def publish(self, topic, payload, retain=True):
+        print(payload)
+        if not isinstance(payload, bool):
+            self._mqttc.publish(topic, payload, retain=True)
 
     def loop_forever(self):
         self._mqttc.loop_forever()
+    
+    def disconnect(self):
+        self._mqttc.disconnect()
