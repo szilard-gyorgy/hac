@@ -8,7 +8,7 @@ class AtlasPH(object):
         self._device.set_i2c_address(address)
 
     def readPH(self):
-        return float(re.sub("[^0-9,\.]", "", self._device.query("R").split(" ")[3]))
+        return float(re.sub("[^0-9,.]", "", self._device.query("R").split(" ")[3]))
 
     def query(self, query):
         return self._device.query(query)
