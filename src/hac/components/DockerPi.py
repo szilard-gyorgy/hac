@@ -7,9 +7,9 @@ class Relay(object):
         self.labels = {}
         self._board = smbus.SMBus(i2c_bus)
         self._i2c_addr = i2c_addr
-        
+
         # load labels
-        for key, value in config.items(): 
+        for key, value in config.items():
             match = (re.match(r"^relay_{}_(\d+)$".format(board), key))
             if match:
                 self.labels[value[0]] = match.group(1)

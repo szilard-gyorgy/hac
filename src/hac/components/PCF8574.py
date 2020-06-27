@@ -8,7 +8,7 @@ class Relay(object):
         self.board = I2CRelayBoard(i2c_bus, i2c_addr)
 
         # load labels
-        for key, value in config.items(): 
+        for key, value in config.items():
             match = (re.match(r"^relay_{}_(\d+)$".format(board), key))
             if match:
                 self.labels[value[0]] = match.group(1)

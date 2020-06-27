@@ -29,6 +29,6 @@ class MQTT(object):
 
     def loop_forever(self):
         self._mqttc.loop_forever()
-    
+
     def disconnect(self):
         self._mqttc.disconnect()

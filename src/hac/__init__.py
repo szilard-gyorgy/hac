@@ -99,7 +99,7 @@ def calibratePhAtlas(ctx, flag, point, value, address):
               required=False,
               default=False,
               type=str,
-              help="Publish to mqtt topic")         
+              help="Publish to mqtt topic")
 @click.option('--tolerance',
               required=False,
               default=50,
@@ -113,7 +113,7 @@ def readPhAtlas(ctx, address, topic, tolerance):
         mqtt = MQTT(ctx.default_map, subscribe=topic)
 
     sensor = AtlasPH(address=address)
-    value = round(sensor.readPH(),2)
+    value = round(sensor.readPH(), 2)
 
     if topic:
         if topic in mqtt.topic_data:
@@ -132,7 +132,7 @@ def readPhAtlas(ctx, address, topic, tolerance):
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
 def readTemperatureCpu(ctx, topic):
-    value = round(CPUTemperature().temperature,2)
+    value = round(CPUTemperature().temperature, 2)
 
     if topic:
         mqtt = MQTT(ctx.default_map, subscribe=topic)
@@ -173,15 +173,15 @@ def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):
 
     for sensor in sensors:
         if sensor[0] == "ph:atlas":
-            value = round(AtlasPH(address=config['ph_atlas_address']).readPH(),2)
+            value = round(AtlasPH(address=config['ph_atlas_address']).readPH(), 2)
         elif sensor[0] == "":
-            value = round(ise_ph(config['ph_ufire_address'], 1).measurepH(),2)
+            value = round(ise_ph(config['ph_ufire_address'], 1).measurepH(), 2)
         elif sensor[0] == "temperature:cpu":
             value = round(CPUTemperature().temperature, 2)
         elif sensor[0] == "ph:ufire":
-            value = round(ise_ph(ph_ufire_address, 1).measurepH(), 2)
+            value = round(ise_ph(config['ph_ufire_address'], 1).measurepH(), 2)
         elif sensor[0] == 'temperature:ufire':
-            value = ise_ph(ph_ufire_address, 1).measureTemp()
+            value = ise_ph(config['ph_ufire_address'], 1).measureTemp()
 
         if sensor[1]:
             if sensor[1] in mqtt.topic_data:
@@ -233,7 +233,7 @@ def relayON(ctx, board, type, name):
 @click.option('--name',
               required=True,
               type=str,
-              help="Relay name")       
+              help="Relay name")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
 def relayOFF(ctx, board, type, name):
@@ -283,12 +283,13 @@ def relayDaemon(ctx, board, type, mqtt_prefix):
     mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels])
     mqtt.loop_forever()
 
+
 @main.command(name="read:temperature:ufire")
 @click.option('--topic',
               required=False,
               default=False,
               type=str,
-              help="Publish to mqtt topic")         
+              help="Publish to mqtt topic")
 @click.option('--tolerance',
               required=False,
               default=50,
@@ -306,7 +307,7 @@ def readTemperatureUfire(ctx, topic, tolerance, ph_ufire_address):
         mqtt = MQTT(ctx.default_map, subscribe=topic)
 
     ise = ise_ph(ph_ufire_address, 1)
-    value = round(ise.measureTemp(),3)
+    value = round(ise.measureTemp(), 3)
 
     if topic:
         if topic in mqtt.topic_data:
@@ -315,12 +316,13 @@ def readTemperatureUfire(ctx, topic, tolerance, ph_ufire_address):
     else:
         click.echo(value)
 
+
 @main.command(name="read:ph:ufire")
 @click.option('--topic',
               required=False,
               default=False,
               type=str,
-              help="Publish to mqtt topic")         
+              help="Publish to mqtt topic")
 @click.option('--samples',
               required=False,
               default=3,
@@ -331,7 +333,7 @@ def readTemperatureUfire(ctx, topic, tolerance, ph_ufire_address):
               default=50,
               type=int,
               help="tolerance in %")
-@click.option('--address', 'ph_ufire_address', 
+@click.option('--address', 'ph_ufire_address',
               required=False,
               default=0x3f,
               type=int,
@@ -344,7 +346,7 @@ def readPhUfire(ctx, topic, tolerance, samples, ph_ufire_address):
 
     ise = ise_ph(ph_ufire_address, 1)
     values = []
-    for x in range(0,samples):
+    for x in range(0, samples):
         values.append(ise.measurepH())
     value = round(sum(values) / samples, 5)
 
@@ -354,6 +356,7 @@ def readPhUfire(ctx, topic, tolerance, samples, ph_ufire_address):
         mqtt.publish(topic, value)
     else:
         click.echo(value)
+
 
 @main.command(name="calibrate:ph:ufire")
 @click.option('--info', 'flag',
@@ -387,7 +390,7 @@ def readPhUfire(ctx, topic, tolerance, samples, ph_ufire_address):
               help="PH sensor address")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
-def calibratePhAtlas(ctx, flag, point, value, ph_ufire_address):
+def calibratePhUfire(ctx, flag, point, value, ph_ufire_address):
     ise = ise_ph(ph_ufire_address, 1)
 
     if flag == 'info':
@@ -414,4 +417,3 @@ def calibratePhAtlas(ctx, flag, point, value, ph_ufire_address):
             ise.calibrateProbeLow(float(value))
         elif point == 'high':
             ise.calibrateProbeHigh(float(value))
-    

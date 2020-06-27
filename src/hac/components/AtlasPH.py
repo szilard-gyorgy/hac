@@ -12,4 +12,3 @@ class AtlasPH(object):
 
     def query(self, query):
         return self._device.query(query)
-
