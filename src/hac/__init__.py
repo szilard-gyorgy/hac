@@ -174,8 +174,6 @@ def multipleTemperatureRead(ctx, mqtt_sensor, text_sensor):
     for sensor in sensors:
         if sensor[0] == "ph:atlas":
             value = round(AtlasPH(address=config['ph_atlas_address']).readPH(), 2)
-        elif sensor[0] == "":
-            value = round(ise_ph(config['ph_ufire_address'], 1).measurepH(), 2)
         elif sensor[0] == "temperature:cpu":
             value = round(CPUTemperature().temperature, 2)
         elif sensor[0] == "ph:ufire":
