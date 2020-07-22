@@ -271,6 +271,7 @@ def relayDaemon(ctx, board, type, mqtt_prefix):
     relay = Relay(board, ctx.default_map)
 
     def _on_message(client, userdata, message):
+        print("Received from topic: {} message: {}".format(message.topic, message.payload.decode("utf-8")))
         match = (re.match(r"^{}(.*)$".format(mqtt_prefix), message.topic))
         if match and match.group(1) in relay.labels:
             if int(message.payload):
@@ -278,7 +279,7 @@ def relayDaemon(ctx, board, type, mqtt_prefix):
             else:
                 relay.switch_off(match.group(1))
 
-    mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels])
+    mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels], type="daemon")
     mqtt.loop_forever()
 
 
