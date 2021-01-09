@@ -1,6 +1,6 @@
 # source https://raw.githubusercontent.com/u-fire/ISE_Probe/master/python/RaspberryPi/ise_ph.py
 
-from hac.libs.ise_probe.iseprobe import iseprobe
+from hac.plugins.ufire.iseprobe import iseprobe
 import math
 
 TEMPERATURE_CALIBRATION_ADDRESS = 100

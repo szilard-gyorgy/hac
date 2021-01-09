@@ -20,15 +20,13 @@ class MQTT(object):
             self._mqttc.username_pw_set(username=self._user, password=self._pass)
         self._mqttc.connect(self._host, self._port, self._keepalive)
         self._mqttc.loop_start()
-        
 
     def _on_connect(self, client, userdata, flags, rc):
-        if rc==0:
+        if rc == 0:
             print("connected OK")
             self._mqttc.subscribe(self.subscribe)
         else:
-            print("Bad connection Returned code=",rc)
-
+            print("Bad connection Returned code=", rc)
 
     def _on_message(self, client, userdata, message):
         self.topic_data[message.topic] = message.payload.decode("utf-8")
