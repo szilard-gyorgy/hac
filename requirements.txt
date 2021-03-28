@@ -14,4 +14,5 @@ RPi.GPIO==0.7.0
 six==1.15.0
 smbus==1.1.post2
 smbus2==0.3.0
+w1thermsensor==1.3.0
 zipp==3.1.0
