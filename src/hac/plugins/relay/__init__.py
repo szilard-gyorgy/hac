@@ -99,22 +99,28 @@ def relayDaemon(ctx, board, type, mqtt_prefix):
 
     config = ctx.default_map
     relay = Relay(type, board)
+    # load labels
+    labels = {}
+    for key, value in config.items():
+        match = (re.match(r"^relay_{}_(\d+)$".format(board), key))
+        if match:
+            labels[value] = match.group(1)
 
     def _on_message(client, userdata, message):
         print("Received from topic: {} message: {}".format(message.topic, message.payload.decode("utf-8")))
         match = (re.match(r"^{}(.*)$".format(mqtt_prefix), message.topic))
-        if match and match.group(1) in relay.labels:
+        if match and match.group(1) in labels:
             if int(message.payload):
-                relay.switch_on(match.group(1))
+                relay.switch_on(relayGetID(board, match.group(1), config))
             else:
-                relay.switch_off(match.group(1))
+                relay.switch_off(relayGetID(board, match.group(1), config))
 
-    mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels], type="daemon")
+    mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in labels], type="daemon")
     mqtt.loop_forever()
 
 
 def relayGetID(board, name, config):
     for key, value in config.items():
         match = (re.match(r"^relay_{}_(\d+)$".format(board), key))
-        if match and value[0] == name:
+        if match and value == name:
             return int(match.group(1))

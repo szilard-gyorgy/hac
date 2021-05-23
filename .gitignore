@@ -21,3 +21,8 @@ config.conf
 *~
 .vscode
 default.cfg
+lib
+lib64
+share
+include
+pyvenv.cfg

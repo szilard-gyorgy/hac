@@ -2,6 +2,8 @@ import os
 import click
 import click_config_file
 from w1thermsensor import W1ThermSensor
+from hac.components.MQTT import MQTT
+from hac.validators.value.variation import variation
 
 
 defaultConfigFile  = "{}/.config/hac/default.cfg".format(os.getenv('HOME'))
@@ -29,8 +31,25 @@ def w1TempList(ctx):
               default="40",
               type=int,
               help="Sensor TYPE")
+@click.option('--topic',
+              required=False,
+              default=False,
+              type=str,
+              help="Publish to mqtt topic")
+@click.option('--tolerance',
+              required=False,
+              default=50,
+              type=int,
+              help="tolerance in %")
 @click.pass_context
 @click_config_file.configuration_option(config_file_name=defaultConfigFile)
-def w1TempRead(ctx, sensor_id, sensor_type):
+def w1TempRead(ctx, sensor_id, sensor_type, topic, tolerance):
     sensor = W1ThermSensor(sensor_type, sensor_id)
-    click.echo("{}°C".format(sensor.get_temperature()))
+    value = sensor.get_temperature()
+    if topic:
+        mqtt = MQTT(ctx.default_map, subscribe=topic)
+        if topic in mqtt.topic_data:
+            value = variation.filter_invalid(mqtt.topic_data[topic], value, tolerance)
+        mqtt.publish(topic, value)
+    else:
+        click.echo("{}°C".format(sensor.get_temperature()))
