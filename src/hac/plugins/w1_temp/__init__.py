@@ -1,7 +1,6 @@
 import os
 import click
 import click_config_file
-from hac.components.MQTT import MQTT
 from w1thermsensor import W1ThermSensor
 
 
@@ -19,6 +18,7 @@ def clickcmd(ctx, debug, verbose):
 def w1TempList(ctx):
     for sensor in W1ThermSensor.get_available_sensors():
         click.echo("Sensor type: {} id: {}".format(sensor.type, sensor.id))
+
 
 @clickcmd.command(name="w1temp:read")
 @click.option('--sensor-id',

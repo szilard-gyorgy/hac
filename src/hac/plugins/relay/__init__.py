@@ -8,6 +8,7 @@ from hac.validators.click.NotRequiredIf import NotRequiredIf
 
 defaultConfigFile  = "{}/.config/hac/default.cfg".format(os.getenv('HOME'))
 
+
 @click.group()
 def clickcmd(ctx, debug, verbose):
     pass
@@ -110,6 +111,7 @@ def relayDaemon(ctx, board, type, mqtt_prefix):
 
     mqtt = MQTT(config, onmessage=_on_message, subscribe=[(mqtt_prefix + label, 0) for label in relay.labels], type="daemon")
     mqtt.loop_forever()
+
 
 def relayGetID(board, name, config):
     for key, value in config.items():
